@@ -20,6 +20,7 @@ Using Google OR-Tools
 ## Installation
 
 Install dependencies ( requirements.txt ) and run the python file
+For Windows users: binary available in release
 
 
 ## Resources
