@@ -6,9 +6,8 @@
 Forked from https://github.com/emadehsan/csp
 
 # Change
-- Bitweather replaces OpenWeatherMap, requiring no CB registration
-- ChatGPT removed and replaced by Google Contact birthdays
-- Added a second calendar
+- Creating a graphical interface with PySimpleGui
+- Add a maximum 15s timeout to avoid large calculations or infinite loops
 
 # OptiBarCut
 
