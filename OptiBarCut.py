@@ -10,7 +10,17 @@ Updated by: GeoHolz
 '''
 from ortools.linear_solver import pywraplp
 import PySimpleGUI as sg
+import logging
+import sys
+from time import strftime
+import os
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
 
+    return os.path.join(base_path, relative_path)
 def newSolver(name,integer=False):
   return pywraplp.Solver(name,\
                          pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING \
@@ -210,6 +220,11 @@ def checkWidths(demands, parent_width):
   for quantity, width in demands:
     if width > parent_width:
       print(f'Small roll width {width} is greater than parent rolls width {parent_width}. Exiting')
+      window_update='La longueur � d�couper {} est sup�rieure � la longueur de la barre {}.'.format(width,parent_width)
+      
+      window['-TOUT-'].update(window_update)
+      window.Refresh()
+
       return False
   return True
 
@@ -294,32 +309,44 @@ def StockCutter1D(child_rolls, parent_rolls, output_json=True, large_model=True,
 
 
   # print('Wall Time:', wall_time)
-  print('Nombre de barres utilisés : ', numRollsUsed)
+
+
+  print('Nombre de barres utilis�s : ', numRollsUsed)
   print('Status:', output['statusName'])
-  print('Solutions trouvés :', output['numSolutions'])
+  print('Solutions trouv�s :', output['numSolutions'])
   print('Solution unique : ', output['numUniqueSolutions'])
 
 
-  return consumed_big_rolls
+  return consumed_big_rolls,output['statusName']
 
 
 
 if __name__ == '__main__':
+  # Create and configure logger
+  datestr = strftime('[%d/%m/%Y %T]')
+  logfile = 'info_{}.log'.format(strftime('%d_%m_%Y'))
+  logging.basicConfig(filename=logfile, format='%(asctime)s %(levelname)s - %(message)s', filemode='a',encoding='UTF-8')
+  logger = logging.getLogger('opti')
+  logger.addHandler(logging.StreamHandler(sys.stdout))  # print logger to stdout
+  logger.setLevel(logging.INFO)
+  logger.info("D�but du calcul")
+
   # First the window layout in 2 columns
 
   data_column = [
+      [sg.Image(resource_path("images/logo.png"),pad=(0, 50))], 
       [
 
-          sg.Text('Taille des barres à découper'), sg.InputText("6600",size=(10,200)),
+          sg.Text('Taille des barres à découper'), sg.InputText("6600",size=(10,200),key="-PARENTROLL-"),
 
       ],
       [
-          sg.Text('1 - Dimension'), sg.InputText("1530",size=(10,200)),
-          sg.Text('Quantité'), sg.InputText("33",size=(10,200)),
+          sg.Text('1 - Dimension'), sg.InputText("",size=(10,200)),
+          sg.Text('Quantité'), sg.InputText("",size=(10,200)),
       ],
       [
-          sg.Text('2 - Dimension'), sg.InputText("867",size=(10,200)),
-          sg.Text('Quantité'), sg.InputText("27",size=(10,200)),
+          sg.Text('2 - Dimension'), sg.InputText("",size=(10,200)),
+          sg.Text('Quantité'), sg.InputText("",size=(10,200)),
       ],
       [
           sg.Text('3 - Dimension'), sg.InputText(size=(10,200)),
@@ -342,8 +369,9 @@ if __name__ == '__main__':
           sg.Text('Quantité'), sg.InputText(size=(10,200)),
       ],
       [
-          sg.Button('Calcul', key="-Calcul-"),
+          sg.Button('Calcul', key="-Calcul-",pad=(0, 50)),
           sg.Button('Effacer', key="-Effacer-"),
+          sg.Button('Imprimer', key="-PRINT-"),
           #sg.Button('Testo', key="-Testo-"),
       ],
   ]
@@ -351,42 +379,58 @@ if __name__ == '__main__':
   # For now will only show the name of the file that was chosen
   result_column = [
       [sg.Text("Résultat :")],
-      [sg.Text("",text_color="red",background_color= "black",key="-WAITPLZ-")],
-      [sg.Multiline(size=(80, 40), key="-TOUT-")],
+      #[sg.Multiline(size=(80, 40), key="-TOUT-")],
+      [sg.Text("",size=(60, 40), key="-TOUT-")],
+      
   ]
 
   # ----- Full layout -----
   layout = [
       [
-          sg.Column(data_column),
+          sg.Column(data_column,element_justification='c',vertical_alignment='t'),
           sg.VSeperator(),
           sg.Column(result_column),
       ]
   ]
 
-  window = sg.Window("OptiBarCut 0.1", layout)
+  window = sg.Window("OptiBarCut v0.3", layout, element_justification='c')
   list_of_lists = [1,3,5,7,9,11,13]
   # Run the Event Loop
   while True:
       event, values = window.read()
       if event == "Exit" or event == sg.WIN_CLOSED:
+          logger.info("Fin du calcul")
           break
 
       if event == "-Calcul-":
+          window['-TOUT-'].update("Calcul en cours, merci de patienter...")
+
+          window.Refresh()
+          file1 = open('rapport.txt', 'w')
           child_rolls = []   
           for liste in list_of_lists:
               if values[liste] and values[liste+1] :
                   child_rolls.append([int(values[liste+1]),int(values[liste])]) 
                      
-          parent_rolls = [[1000, int(values[0])]]
-          consumed_big_rolls = StockCutter1D(child_rolls, parent_rolls, output_json=False, large_model=False)
-          result='Nombre de barres utilisés : '+ str(len(consumed_big_rolls)) + '\n'
-          for idx, roll in enumerate(consumed_big_rolls):
-            result += 'Barre N°'+ str(idx+1)+ ': Chute : '+str(round(roll[0]))+' Découpe : '+str(roll[1])+'\n'
-          window['-TOUT-'].update(result)
+          parent_rolls = [[1000, int(values["-PARENTROLL-"])]]
+          logger.info(values["-PARENTROLL-"])
+          logger.info(child_rolls)
+          consumed_big_rolls,statussolve = StockCutter1D(child_rolls, parent_rolls, output_json=False, large_model=False)
+          result=""
+          if statussolve == "OPTIMAL":
+            result += 'Une solution optimale a été trouvée.\n'
+          elif statussolve == "FEASIBLE":
+            result += 'Une solution réalisable a été trouvée, mais nous ne savons pas si elle est optimale.\n'
+          if len(consumed_big_rolls) > 0 :
+            result+='Nombre de barres utilisés : '+ str(len(consumed_big_rolls)) + '\n'
+            for idx, roll in enumerate(consumed_big_rolls):
+              result += 'Barre N°'+ str(idx+1)+ '. Découpe : '+str(roll[1])+':   Chute : '+str(round(roll[0]))+'\n'
+            window['-TOUT-'].update(result)
+            file1.write(result)
+            file1.close()
+            logger.info(result)
       #if event == "-Testo-":
-      #  print("Testo")
-      #  window['-WAITPLZ-'].update("Calcul en cours, merci de patienter...")
+      #  window['-TOUT-'].update("Calcul en cours, merci de patienter...")
       if event == "-Effacer-":
           print("Effacer")
           for liste in list_of_lists:
@@ -394,5 +438,7 @@ if __name__ == '__main__':
             window[liste+1].update("")
 
           window['-TOUT-'].update("")
+      if event == "-PRINT-":
+        os.startfile("rapport.txt")
 
   window.close()
