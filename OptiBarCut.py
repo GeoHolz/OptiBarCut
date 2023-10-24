@@ -14,6 +14,7 @@ import logging
 import sys
 from time import strftime
 import os
+import webbrowser
 def resource_path(relative_path):
     try:
         base_path = sys._MEIPASS
@@ -334,7 +335,7 @@ if __name__ == '__main__':
   # First the window layout in 2 columns
 
   data_column = [
-      [sg.Image(resource_path("images/logo.png"),pad=(0, 25))], 
+      [sg.Image(resource_path("images/logo.png"),pad=(0, 0))], 
       [
 
           sg.Text('Taille des barres à découper'), sg.InputText("6600",size=(10,200),key="-PARENTROLL-"),
@@ -373,6 +374,9 @@ if __name__ == '__main__':
           sg.Button('Effacer', key="-Effacer-"),
           sg.Button('Imprimer', key="-PRINT-"),
           #sg.Button('Testo', key="-Testo-"),
+      ],
+      [
+          sg.Text("Github", tooltip="https://github.com/GeoHolz/OptiBarCut",enable_events=True,key="URL https://github.com/GeoHolz/OptiBarCut")
       ],
   ]
 
@@ -440,5 +444,7 @@ if __name__ == '__main__':
           window['-TOUT-'].update("")
       if event == "-PRINT-":
         os.startfile("rapport.txt")
+      if event.startswith('URL '):
+        webbrowser.open("https://github.com/GeoHolz/OptiBarCut")
 
   window.close()
