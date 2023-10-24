@@ -1,2 +1,5 @@
 info_*.log
 rapport.txt
+.venv/*
+Pipfile
+Pipfile.lock

@@ -132,7 +132,7 @@ def solve_model(demands, parent_width=100, cutStyle='exactCuts'):
   Cost = solver.Sum((j+1)*y[j] for j in range(k[1]))
 
   solver.Minimize(Cost)
-  solver.set_time_limit(15000)
+  solver.set_time_limit(120000)
   status = solver.Solve()
   numRollsUsed = SolVal(nb)
 
@@ -311,9 +311,9 @@ def StockCutter1D(child_rolls, parent_rolls, output_json=True, large_model=True,
   # print('Wall Time:', wall_time)
 
 
-  print('Nombre de barres utilis�s : ', numRollsUsed)
+  print('Nombre de barres utilisés : ', numRollsUsed)
   print('Status:', output['statusName'])
-  print('Solutions trouv�s :', output['numSolutions'])
+  print('Solutions trouvés :', output['numSolutions'])
   print('Solution unique : ', output['numUniqueSolutions'])
 
 
@@ -329,12 +329,12 @@ if __name__ == '__main__':
   logger = logging.getLogger('opti')
   logger.addHandler(logging.StreamHandler(sys.stdout))  # print logger to stdout
   logger.setLevel(logging.INFO)
-  logger.info("D�but du calcul")
+  logger.info("Début du calcul")
 
   # First the window layout in 2 columns
 
   data_column = [
-      [sg.Image(resource_path("images/logo.png"),pad=(0, 50))], 
+      [sg.Image(resource_path("images/logo.png"),pad=(0, 25))], 
       [
 
           sg.Text('Taille des barres à découper'), sg.InputText("6600",size=(10,200),key="-PARENTROLL-"),
@@ -393,7 +393,7 @@ if __name__ == '__main__':
       ]
   ]
 
-  window = sg.Window("OptiBarCut v0.3", layout, element_justification='c')
+  window = sg.Window("OptiBarCut v0.5", layout, element_justification='c')
   list_of_lists = [1,3,5,7,9,11,13]
   # Run the Event Loop
   while True:
